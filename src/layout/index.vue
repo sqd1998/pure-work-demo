@@ -30,6 +30,8 @@ import LaySetting from "./components/lay-setting/index.vue";
 import NavVertical from "./components/lay-sidebar/NavVertical.vue";
 import NavHorizontal from "./components/lay-sidebar/NavHorizontal.vue";
 import BackTopIcon from "@/assets/svg/back_top.svg?component";
+//拖拽组件
+import DragBall from "./components/lay-dragball/index.vue";
 
 const appWrapperRef = ref();
 const { isDark } = useDark();
@@ -183,6 +185,7 @@ const LayHeader = defineComponent({
         <LayHeader />
         <!-- 主体内容 -->
         <LayContent :fixed-header="set.fixedHeader" />
+        <DragBall v-show="false" />
       </div>
       <el-scrollbar v-else>
         <el-backtop
@@ -194,6 +197,7 @@ const LayHeader = defineComponent({
         <LayHeader />
         <!-- 主体内容 -->
         <LayContent :fixed-header="set.fixedHeader" />
+        <DragBall v-show="false" />
       </el-scrollbar>
     </div>
     <!-- 系统设置 -->
