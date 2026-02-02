@@ -17,6 +17,9 @@ importers:
       '@logicflow/extension':
         specifier: ^2.1.12
         version: 2.1.12(@logicflow/core@2.1.10)(@logicflow/vue-node-registry@1.1.11(@logicflow/core@2.1.10)(vue@3.5.22(typescript@5.9.3)))
+      '@microsoft/fetch-event-source':
+        specifier: ^2.0.1
+        version: 2.0.1
       '@pureadmin/descriptions':
         specifier: ^1.2.1
         version: 1.2.1(echarts@6.0.0)(element-plus@2.11.5(vue@3.5.22(typescript@5.9.3)))(typescript@5.9.3)
@@ -101,6 +104,9 @@ importers:
       vue-types:
         specifier: ^6.0.0
         version: 6.0.0(vue@3.5.22(typescript@5.9.3))
+      wps-jsapi-declare:
+        specifier: ^2.2.0
+        version: 2.2.0
       x-sender:
         specifier: ^1.2.1
         version: 1.2.1
@@ -1018,6 +1024,9 @@ packages:
 
   '@mermaid-js/parser@0.6.3':
     resolution: {integrity: sha512-lnjOhe7zyHjc+If7yT4zoedx2vo4sHaTmtkl1+or8BRTnCtDmcTpAjpzDSfCZrshM5bCoz0GyidzadJAH1xobA==}
+
+  '@microsoft/fetch-event-source@2.0.1':
+    resolution: {integrity: sha512-W6CLUJ2eBMw3Rec70qrsEW0jOm/3twwJv21mrmj2yORiaVmVYGS4sSS5yUwvQc1ZlDLYGPnClVWmUUMagKNsfA==}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -4621,6 +4630,9 @@ packages:
     resolution: {integrity: sha512-BN22B5eaMMI9UMtjrGd5g5eCYPpCPDUy0FJXbYsaT5zYxjFOckS53SQDE3pWkVoWpHXVb3BrYcEN4Twa55B5cA==}
     engines: {node: '>=0.10.0'}
 
+  wps-jsapi-declare@2.2.0:
+    resolution: {integrity: sha512-Wue24GmsWOS+uOWis4zPwUHsDht0GowhkLWXvwTv5SpDMxP1hAaoxfZhEcEIQf/pjG3iQNGwrj5ZJ9Jgw6xZIA==}
+
   wrap-ansi@7.0.0:
     resolution: {integrity: sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q==}
     engines: {node: '>=10'}
@@ -5431,6 +5443,8 @@ snapshots:
   '@mermaid-js/parser@0.6.3':
     dependencies:
       langium: 3.3.1
+
+  '@microsoft/fetch-event-source@2.0.1': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
@@ -9249,6 +9263,8 @@ snapshots:
       string-width: 7.2.0
 
   word-wrap@1.2.5: {}
+
+  wps-jsapi-declare@2.2.0: {}
 
   wrap-ansi@7.0.0:
     dependencies:

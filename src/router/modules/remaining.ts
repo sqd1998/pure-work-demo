@@ -44,5 +44,14 @@ export default [
         component: () => import("@/layout/redirect.vue")
       }
     ]
+  },
+  {
+    path: "/toWps",
+    name: "toWps",
+    component: () => import("@/components/wpsView/toWpsView.vue"),
+    meta: {
+      showLink: false,
+      title: "toWps"
+    }
   }
 ] satisfies Array<RouteConfigsTable>;
