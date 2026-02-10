@@ -48,6 +48,10 @@
     "url": "https://github.com/xiaoxian521"
   },
   "dependencies": {
+    "@antv/x6": "^2.19.2",
+    "@antv/x6-plugin-export": "^2.1.6",
+    "@antv/x6-plugin-snapline": "^2.1.7",
+    "@antv/x6-plugin-stencil": "^2.1.5",
     "@element-plus/icons-vue": "^2.3.2",
     "@logicflow/core": "^2.1.10",
     "@logicflow/extension": "^2.1.12",
