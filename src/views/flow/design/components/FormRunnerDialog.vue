@@ -17,7 +17,7 @@
           {{
             currentNode.properties?.name ||
             currentNode.text?.value ||
-            "普通节点"
+            "表单节点"
           }}
         </div>
         <div class="runner-desc">

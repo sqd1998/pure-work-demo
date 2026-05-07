@@ -121,7 +121,7 @@ const pixelOption = [
   },
   {
     value: "endParallel",
-    label: "普通节点"
+    label: "表单节点"
   },
   {
     value: "background",

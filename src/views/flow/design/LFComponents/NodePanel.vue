@@ -120,7 +120,7 @@ let treeList = ref([
       {
         id: "39",
         type: "endParallel",
-        name: "普通",
+        name: "表单",
         children: []
       },
       {
