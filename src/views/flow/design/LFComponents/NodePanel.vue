@@ -20,9 +20,10 @@
         :draggable="false"
         :allow-drop="allowDrop"
         :filter-node-method="filterNodeMethod"
+        class="custom-tree"
       >
         <template v-slot="{ node, data }">
-          <div class="custom-tree-node">
+          <div class="custom-tree-node" @mousedown="mousedownFunc(data)">
             <start v-if="data.type == 'start'" class="endParallel" />
             <end v-if="data.type == 'end'" class="endParallel" />
             <startParallel
@@ -76,12 +77,7 @@
               "
             />
 
-            <span
-              class="drag-label"
-              :title="node.label"
-              @mousedown="mousedownFunc(data)"
-              >{{ node.label }}</span
-            >
+            <span class="drag-label" :title="node.label">{{ node.label }}</span>
           </div>
         </template>
       </el-tree>
@@ -115,73 +111,52 @@ let treeList = ref([
         id: "31",
         type: "start",
         name: "开始",
-        children: []
+        children: [],
+        properties: {
+          meta_type: "start"
+        }
       },
       {
         id: "39",
         type: "endParallel",
         name: "表单",
-        children: []
+        children: [],
+        properties: {
+          meta_type: "form"
+        }
       },
       {
         id: "40",
         type: "end",
         name: "结束",
-        children: []
+        children: [],
+        properties: {
+          meta_type: "end"
+        }
       }
     ]
   },
   {
     id: "6",
-    name: "图形节点",
+    name: "功能节点",
     children: [
       {
         id: "32",
         type: "rect",
-        name: "矩形",
-        children: []
+        name: "mcp",
+        children: [],
+        properties: {
+          meta_type: "mcp"
+        }
       },
       {
         id: "33",
         type: "circle",
-        name: "圆形",
-        children: []
-      },
-      {
-        id: "34",
-        type: "ellipse",
-        name: "椭圆",
-        children: []
-      },
-      {
-        id: "35",
-        type: "polygon",
-        name: "多边形",
-        children: []
-      },
-      {
-        id: "36",
-        type: "diamond",
-        name: "菱形",
-        children: []
-      }
-    ]
-  },
-  {
-    id: "4",
-    name: "背景节点",
-    children: [
-      {
-        id: "41",
-        type: "background",
-        name: "横向泳道",
-        children: []
-      },
-      {
-        id: "42",
-        type: "background2",
-        name: "纵向泳道",
-        children: []
+        name: "llm",
+        children: [],
+        properties: {
+          meta_type: "llm"
+        }
       }
     ]
   }
@@ -189,7 +164,8 @@ let treeList = ref([
 let filterText = ref("");
 let dragRow = reactive({
   type: "",
-  name: ""
+  name: "",
+  properties: {}
 }); //拖拽的行
 let randomNum = ref(null);
 
@@ -214,12 +190,15 @@ const mousedownFunc = val => {
     "background2"
   ];
   if (typeList.includes(val.type)) {
-    dragRow = val;
+    dragRow.type = val.type;
+    dragRow.name = val.name;
+    dragRow.properties = val.properties || {};
     randomNum.value = randomNumber();
     props.lf.dnd.startDrag({
       type: val.type,
       text: val.name,
-      id: randomNum.value
+      id: randomNum.value,
+      properties: val.properties
     });
   }
 };
@@ -236,21 +215,19 @@ const filterNodeMethod = (value, data) => {
 
 onMounted(() => {
   props.lf.on("node:dnd-add", () => {
+    const baseProperties = {
+      name: dragRow.name,
+      frontend_status: "1",
+      ...dragRow.properties
+    };
     if (dragRow.type == "start") {
-      props.lf.setProperties(randomNum.value, {
-        frontend_status: "1", //0配置错误，1配置正常
-        name: dragRow.name
-      });
+      props.lf.setProperties(randomNum.value, baseProperties);
     } else if (dragRow.type == "end") {
-      props.lf.setProperties(randomNum.value, {
-        frontend_status: "1", //0配置错误，1配置正常
-        name: dragRow.name
-      });
+      props.lf.setProperties(randomNum.value, baseProperties);
     } else if (dragRow.type == "endParallel") {
       props.lf.setProperties(randomNum.value, {
-        name: dragRow.name,
+        ...baseProperties,
         desc: "",
-        frontend_status: "1",
         formRule: [],
         formOption: {
           submitBtn: false,
@@ -259,9 +236,8 @@ onMounted(() => {
       });
     } else if (dragRow.type == "background" || dragRow.type == "background2") {
       props.lf.setProperties(randomNum.value, {
-        name: dragRow.name,
+        ...baseProperties,
         desc: "",
-        frontend_status: "1",
         menu: [],
         text: "123"
       });
@@ -273,9 +249,8 @@ onMounted(() => {
       dragRow.type == "diamond"
     ) {
       props.lf.setProperties(randomNum.value, {
-        name: dragRow.name,
+        ...baseProperties,
         desc: "",
-        frontend_status: "1",
         menu: []
       });
     }
@@ -312,10 +287,27 @@ onMounted(() => {
   user-select: none;
 }
 
+.custom-tree {
+  :deep(.el-tree-node__content) {
+    height: 32px; // 增加行高，方便点击
+    padding-left: 0 !important;
+
+    // 让自定义节点内容撑满
+    .el-tree-node__expand-icon {
+      padding: 6px;
+    }
+  }
+}
+
 .custom-tree-node {
   display: flex;
+  flex: 1;
+  align-items: center;
+  width: 100%;
+  height: 100%;
 
   .drag-label {
+    flex: 1;
     user-select: none; //禁止选择文本
   }
 
