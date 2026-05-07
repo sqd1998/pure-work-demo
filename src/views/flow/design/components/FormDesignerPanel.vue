@@ -32,8 +32,103 @@ const props = defineProps({
 
 const designerRef = ref<InstanceType<typeof FcDesigner> | null>(null);
 
-const pocAllowedItems = ["input", "datePicker", "timePicker", "timeRange"];
+const customCodeField = {
+  menu: "main",
+  icon: "icon-input",
+  label: "工号",
+  name: "pocCode",
+  languageKey: ["pocCode"],
+  input: true,
+  rule() {
+    return {
+      type: "input",
+      field: "code",
+      title: "工号",
+      info: "",
+      $required: true,
+      props: {
+        placeholder: "请输入工号",
+        clearable: true
+      }
+    };
+  },
+  props() {
+    return [];
+  },
+  parseRule(rule) {
+    rule.field = "code";
+    rule.title = "工号";
+    rule.type = "input";
+  },
+  loadRule(rule) {
+    rule.field = "code";
+    rule.title = "工号";
+    rule.type = "input";
+  }
+};
+
+const customMonthField = {
+  menu: "main",
+  icon: "icon-date",
+  label: "月份",
+  name: "pocMonth",
+  languageKey: ["pocMonth"],
+  input: true,
+  rule() {
+    return {
+      type: "datePicker",
+      field: "month",
+      title: "月份",
+      info: "",
+      $required: true,
+      props: {
+        type: "month",
+        format: "YYYY-MM",
+        valueFormat: "YYYY-MM",
+        placeholder: "请选择月份",
+        clearable: true
+      }
+    };
+  },
+  props() {
+    return [];
+  },
+  parseRule(rule) {
+    rule.field = "month";
+    rule.title = "月份";
+    rule.type = "datePicker";
+    rule.props = {
+      ...rule.props,
+      type: "month",
+      format: "YYYY-MM",
+      valueFormat: "YYYY-MM"
+    };
+  },
+  loadRule(rule) {
+    rule.field = "month";
+    rule.title = "月份";
+    rule.type = "datePicker";
+    rule.props = {
+      ...rule.props,
+      type: "month",
+      format: "YYYY-MM",
+      valueFormat: "YYYY-MM"
+    };
+  }
+};
+
+const customFormMenu = {
+  name: "main",
+  title: "基础组件",
+  list: []
+};
+
+const pocAllowedItems = ["pocCode", "pocMonth"];
 const pocHiddenItems = [
+  "input",
+  "datePicker",
+  "timePicker",
+  "timeRange",
   "textarea",
   "password",
   "inputNumber",
@@ -89,6 +184,7 @@ const designerConfig = computed<Config>(() => ({
   showDevice: false,
   showPreviewBtn: false,
   hiddenMenu: ["subform", "aide", "layout"],
+  menu: [customFormMenu],
   hiddenItem: pocHiddenItems,
   allowDrag: {
     default: pocAllowedItems
@@ -139,8 +235,18 @@ const setOption = (option: Options = {}) => {
   );
 };
 
+const registerCustomFields = () => {
+  const designer = designerRef.value as any;
+  if (!designer) return;
+
+  designer.setMenuItem?.("main", []);
+  designer.addComponent?.([customCodeField, customMonthField]);
+  designer.setMenuItem?.("main", [customCodeField, customMonthField]);
+};
+
 const loadDesignerData = async () => {
   await nextTick();
+  registerCustomFields();
   setRule((props.rule || []) as Rule[]);
   setOption((props.option || {}) as Options);
 };

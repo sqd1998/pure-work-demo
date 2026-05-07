@@ -339,18 +339,30 @@ const validateFlowForRun = graphData => {
   return startNodes[0];
 };
 
+const getFlowFormData = () => {
+  return runningContext.nodes.reduce((formData, node) => {
+    return {
+      ...formData,
+      ...node.formData
+    };
+  }, {});
+};
+
 const finishFlowRun = () => {
   isFlowRunning.value = false;
   runningContext.endedAt = new Date().toISOString();
   showFormRunner.value = false;
   runnerNodeData.value = null;
 
+  const formData = getFlowFormData();
   const result = {
     startedAt: runningContext.startedAt,
     endedAt: runningContext.endedAt,
+    formData,
     nodes: [...runningContext.nodes]
   };
 
+  console.log("[Flow Runner] formData:", formData);
   console.log("[Flow Runner] flow finished:", result);
   ElMessage.success("流程运行完成，已收集全部表单数据");
 };
