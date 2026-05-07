@@ -86,11 +86,12 @@ pure-work-demo/
 - 路径别名 `@` 指向 `src`，项目中大量使用 `@/...` 导入。
 - Flow 模块当前以 LogicFlow 为核心：自定义节点注册位于 `src/views/flow/design/registerNode`，自定义边位于 `src/views/flow/design/registerEdge`，左侧节点面板位于 `src/views/flow/design/LFComponents/NodePanel.vue`，属性抽屉位于 `src/views/flow/design/PropertySetting/PropertyDialog.vue`。
 - Flow 已在普通节点 `endParallel` 的属性面板中集成 form-create designer；设计器数据保存到节点 `properties.formRule` 与 `properties.formOption`，保证 `lf.getGraphData()` 可完整保存与回显。
+- PoC 阶段 form-create designer 仅允许使用文本框 `input` 与日期框 `datePicker`，其他组件菜单/字段已在 `FormDesignerPanel.vue` 中隐藏，并在保存/回显时过滤非 PoC 字段。
 - LogicFlow 节点属性更新主要通过 `lf.setProperties` 与 `lf.updateText` 完成；节点可视化组件通过 `createApp + h` 挂载到 LogicFlow HTML 节点中。
 - 避免在未确认生命周期清理的情况下重复挂载 LogicFlow HTML 节点中的 Vue 子应用；后续重构时应考虑卸载逻辑。
 
 ## 最后更新时间
 
-2026-05-07 09:58:25 +08:00
+2026-05-07 10:23:31 +08:00
 
-更新摘要：修正 `FormDesignerPanel.vue` 中 `@form-create/designer` 的导入方式，当前版本运行时只提供默认导出，应使用 `import FcDesigner from "@form-create/designer"`。
+更新摘要：补充隐藏 form-create designer 中的穿梭框 `elTransfer` 与树形选择 `elTreeSelect`，避免 PoC 阶段字段面板出现非需求组件。

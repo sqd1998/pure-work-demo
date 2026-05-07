@@ -32,9 +32,68 @@ const props = defineProps({
 
 const designerRef = ref<InstanceType<typeof FcDesigner> | null>(null);
 
+const pocAllowedItems = ["input", "datePicker"];
+const pocHiddenItems = [
+  "textarea",
+  "password",
+  "inputNumber",
+  "number",
+  "radio",
+  "checkbox",
+  "select",
+  "switch",
+  "rate",
+  "timePicker",
+  "timeRange",
+  "slider",
+  "dateRange",
+  "colorPicker",
+  "cascader",
+  "upload",
+  "transfer",
+  "elTransfer",
+  "tree",
+  "treeSelect",
+  "elTreeSelect",
+  "editor",
+  "wangEditor",
+  "signaturePad",
+  "group",
+  "subForm",
+  "tableForm",
+  "tableFormColumn",
+  "alert",
+  "button",
+  "text",
+  "title",
+  "html",
+  "divider",
+  "tag",
+  "image",
+  "row",
+  "table",
+  "tabs",
+  "space",
+  "card",
+  "collapse",
+  "col",
+  "tabPane",
+  "collapseItem"
+];
+
 const designerConfig = computed<Config>(() => ({
   showSaveBtn: false,
   showAi: false,
+  showLanguage: false,
+  showJsonPreview: false,
+  showInputData: false,
+  showDevice: false,
+  showPreviewBtn: false,
+  hiddenMenu: ["subform", "aide", "layout"],
+  hiddenItem: pocHiddenItems,
+  allowDrag: {
+    default: pocAllowedItems
+  },
   formOptions: {
     submitBtn: false,
     resetBtn: false
@@ -47,7 +106,7 @@ const cloneData = <T,>(data: T): T => {
 };
 
 const getRule = (): Rule[] => {
-  return cloneData(designerRef.value?.getRule?.() || []);
+  return cloneData(filterPocRules(designerRef.value?.getRule?.() || []));
 };
 
 const getOption = (): Options => {
@@ -59,8 +118,16 @@ const getOption = (): Options => {
   );
 };
 
+const isPocRule = (rule: Rule) => {
+  return pocAllowedItems.includes(rule?._fc_drag_tag || rule?.type);
+};
+
+const filterPocRules = (rules: Rule[] = []) => {
+  return rules.filter(isPocRule);
+};
+
 const setRule = (rule: Rule[] = []) => {
-  designerRef.value?.setRule?.(cloneData(rule));
+  designerRef.value?.setRule?.(cloneData(filterPocRules(rule)));
 };
 
 const setOption = (option: Options = {}) => {
