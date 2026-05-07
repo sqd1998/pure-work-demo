@@ -94,6 +94,6 @@ pure-work-demo/
 
 ## 最后更新时间
 
-2026-05-07 10:39:03 +08:00
+2026-05-07 10:52:21 +08:00
 
-更新摘要：修复 `src/router/index.ts` 中三元表达式仅用于副作用导致的 `no-unused-expressions` 警告，并通过 `pnpm lint:eslint` 与 `pnpm typecheck` 校验。
+更新摘要：再次修复 `src/router/index.ts` 中三元表达式仅用于副作用导致的 `no-unused-expressions` 警告，并通过 `pnpm lint:eslint` 与 `pnpm typecheck` 校验。

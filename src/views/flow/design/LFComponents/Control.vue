@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- 画布左上角几个按钮 -->
-    <div class="panelLayout" style=" height: 200px;background: #fff">
+    <div class="panelLayout" style="height: 200px; background: #fff">
       <el-tooltip content="放大" title="放大" placement="left">
         <el-icon @click="$_zoomIn"><ZoomIn /></el-icon>
       </el-tooltip>

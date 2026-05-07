@@ -330,8 +330,6 @@ onMounted(() => {
 });
 </script>
 <style lang="scss">
-
-
 @keyframes lf-animate-dash {
   to {
     stroke-dashoffset: 0;
