@@ -9,20 +9,15 @@
       @closed="closed"
     >
       <div class="json-container">
-        <vueJsonPretty
-          v-model:data="graphDataJson"
-          :deep="10"
-          :showLine="false"
-          :virtual="true"
-          :editable="true"
-          editableTrigger="dblclick"
-          :height="500"
+        <el-input
+          v-model="jsonString"
+          type="textarea"
+          :rows="25"
+          placeholder="请输入JSON数据"
         />
         <div class="json-copy">
           <el-tooltip content="复制" placement="left">
-            <el-icon @click="copyFunc(JSON.stringify(graphDataJson))"
-              ><CopyDocument
-            /></el-icon>
+            <el-icon @click="copyFunc(jsonString)"><CopyDocument /></el-icon>
           </el-tooltip>
         </div>
       </div>
@@ -36,8 +31,6 @@
   </div>
 </template>
 <script setup lang="ts">
-import VueJsonPretty from "vue-json-pretty";
-import "vue-json-pretty/lib/styles.css";
 import { CopyDocument } from "@element-plus/icons-vue";
 import { ref, onMounted, watch } from "vue";
 import { ElMessage } from "element-plus";
@@ -48,15 +41,20 @@ const props = defineProps({
 const emit = defineEmits(["closed", "update"]);
 
 let showViewJson = ref(true);
-let graphDataJson = ref({});
+let jsonString = ref("");
+
 const copyFunc = data => {
   if (data) {
-    let oInput = document.createElement("input");
+    let oInput = document.createElement("textarea");
     oInput.value = data;
     document.body.appendChild(oInput);
     oInput.select();
-    ElMessage.success("复制成功");
-    document.execCommand("Copy");
+    try {
+      document.execCommand("Copy");
+      ElMessage.success("复制成功");
+    } catch (err) {
+      ElMessage.error("复制失败");
+    }
     document.body.removeChild(oInput);
   }
 };
@@ -66,7 +64,7 @@ watch(
   () => props.graphData,
   newVal => {
     if (newVal) {
-      graphDataJson.value = newVal;
+      jsonString.value = JSON.stringify(newVal, null, 2);
     }
   },
   { immediate: true, deep: true }
@@ -78,8 +76,13 @@ const closed = () => {
 };
 
 const updateGraph = () => {
-  emit("update", graphDataJson.value);
-  showViewJson.value = false;
+  try {
+    const updatedData = JSON.parse(jsonString.value);
+    emit("update", updatedData);
+    showViewJson.value = false;
+  } catch (error) {
+    ElMessage.error("JSON 格式错误，请检查后再更新");
+  }
 };
 
 onMounted(() => {});
@@ -88,10 +91,11 @@ onMounted(() => {});
 .json-container {
   position: relative;
 }
+
 .json-copy {
   position: absolute;
-  right: 20px;
   top: 0;
+  right: 20px;
   font-size: 16px;
   cursor: pointer;
 }
