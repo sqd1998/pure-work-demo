@@ -1,6 +1,12 @@
 <template>
   <div class="end-parallel-property">
-    <el-tabs v-model="activeTab">
+    <el-tabs v-model="activeTab" class="property-tabs">
+      <template #extra>
+        <div v-if="showActions && flowDetail.status != '2'" class="action-bar">
+          <el-button @click="cancelFunc">取消</el-button>
+          <el-button type="primary" @click="confirmFunc">保存并关闭</el-button>
+        </div>
+      </template>
       <el-tab-pane label="基础信息" name="basic">
         <el-form
           ref="propertyFormRef"
@@ -21,16 +27,12 @@
       <el-tab-pane label="表单设计" name="form">
         <FormDesignerPanel
           ref="formDesignerRef"
+          height="calc(100vh - 150px)"
           :rule="propertyForm.formRule"
           :option="propertyForm.formOption"
         />
       </el-tab-pane>
     </el-tabs>
-
-    <div v-if="flowDetail.status != '2'" class="mt15 action-bar">
-      <el-button @click="cancelFunc"> 取消 </el-button>
-      <el-button type="primary" @click="confirmFunc"> 确定 </el-button>
-    </div>
   </div>
 </template>
 <script setup lang="ts">
@@ -42,6 +44,10 @@ import FormDesignerPanel from "../../components/FormDesignerPanel.vue";
 const props = defineProps({
   nodeData: Object,
   lf: Object || String,
+  showActions: {
+    type: Boolean,
+    default: true
+  },
   //详情
   flowDetail: {
     type: Object,
@@ -119,6 +125,11 @@ const cancelFunc = () => {
   emit("closed");
 };
 
+defineExpose({
+  confirmFunc,
+  cancelFunc
+});
+
 onMounted(() => {
   propertyForm.name = props.nodeData.properties.name;
   propertyForm.desc = props.nodeData.properties.desc
@@ -132,12 +143,39 @@ onMounted(() => {
 </script>
 <style scoped lang="scss">
 .end-parallel-property {
+  display: flex;
+  flex-direction: column;
   min-width: 980px;
+  height: 100%;
+  overflow: hidden;
+}
+
+.property-tabs {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+
+  :deep(.el-tabs__header) {
+    flex: none;
+    margin-bottom: 12px;
+  }
+
+  :deep(.el-tabs__content) {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  :deep(.el-tab-pane) {
+    height: 100%;
+    overflow: hidden;
+  }
 }
 
 .action-bar {
   display: flex;
-  justify-content: flex-end;
-  padding-bottom: 12px;
+  gap: 8px;
+  align-items: center;
 }
 </style>

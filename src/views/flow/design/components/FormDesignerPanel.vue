@@ -165,12 +165,17 @@ defineExpose({
 .form-designer-panel {
   width: 100%;
   min-width: 960px;
+  height: 100%;
   overflow: hidden;
   border: 1px solid var(--el-border-color-light);
   border-radius: 6px;
 
   &__designer {
     width: 100%;
+  }
+
+  :deep(._fc-designer) {
+    overflow: hidden;
   }
 }
 </style>

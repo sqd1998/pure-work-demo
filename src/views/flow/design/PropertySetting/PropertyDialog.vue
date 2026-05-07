@@ -10,8 +10,16 @@
       @closed="closed"
     >
       <template #header>
-        <div class="unit">
-          {{ getLabelByValue(nodeData.type, pixelOption, "value", "label") }}
+        <div class="drawer-header">
+          <div class="unit">
+            {{ getLabelByValue(nodeData.type, pixelOption, "value", "label") }}
+          </div>
+          <div v-if="nodeData.type === 'endParallel'" class="drawer-actions">
+            <el-button @click="closed">取消</el-button>
+            <el-button type="primary" @click="saveEndParallelProperty">
+              保存并关闭
+            </el-button>
+          </div>
         </div>
       </template>
       <div class="property-dialog-body">
@@ -46,10 +54,12 @@
 
         <endParallelProperty
           v-if="nodeData.type === 'endParallel'"
+          ref="endParallelPropertyRef"
           :title="title"
           :nodeData="nodeData"
           :lf="lf"
           :flowDetail="flowDetail"
+          :showActions="false"
           @closed="closed"
         />
 
@@ -143,6 +153,7 @@ const drawerSize = computed(() => {
 });
 
 let showNodeAttribute = ref(true);
+let endParallelPropertyRef = ref(null);
 const getLabelByValue = (
   value: any,
   arr: any[],
@@ -158,6 +169,10 @@ const getLabelByValue = (
   return label;
 };
 
+const saveEndParallelProperty = () => {
+  endParallelPropertyRef.value?.confirmFunc?.();
+};
+
 //弹窗关闭
 const closed = () => {
   emit("closed", true);
@@ -166,8 +181,27 @@ const closed = () => {
 onMounted(() => {});
 </script>
 <style scoped lang="scss">
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.drawer-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding-right: 32px;
+}
+
 .property-dialog-body {
-  padding: 15px 20px;
-  overflow-x: auto;
+  height: 100%;
+  overflow: hidden;
+}
+
+:deep(.el-drawer__body) {
+  padding: 0 20px 16px;
+  overflow: hidden;
 }
 </style>

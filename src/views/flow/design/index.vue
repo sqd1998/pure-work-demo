@@ -518,12 +518,21 @@ onMounted(() => {
   background-color: white;
 }
 
+.el-drawer__header {
+  margin-bottom: 10px;
+}
+
 .el-drawer__body {
+  padding-top: 0 !important;
+}
+
+/* .el-drawer__body {
   z-index: 3;
   height: 80%;
   margin-top: -30px;
   overflow: auto;
-}
+  background-color: #fff;
+} */
 
 .lf-node-text-auto-wrap {
   cursor: pointer;
