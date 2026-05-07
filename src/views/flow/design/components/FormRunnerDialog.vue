@@ -30,16 +30,15 @@
         :rule="formRule"
         :option="formOption"
       />
-      <el-empty v-else description="当前节点还没有设计表单字段" />
+      <el-empty
+        v-else
+        description="当前节点还没有设计表单字段，点击继续进入下一节点"
+      />
     </div>
     <template #footer>
       <el-button @click="visible = false">取消</el-button>
-      <el-button
-        type="primary"
-        :disabled="!currentNode || !formRule.length"
-        @click="submitForm"
-      >
-        提交并收集数据
+      <el-button type="primary" :disabled="!currentNode" @click="submitForm">
+        {{ formRule.length ? "提交并继续" : "继续" }}
       </el-button>
     </template>
   </el-dialog>
@@ -98,7 +97,27 @@ watch(
   }
 );
 
+const emitSubmitted = (formData = {}) => {
+  const submitPayload = {
+    nodeId: currentNode.value.id,
+    nodeType: currentNode.value.type,
+    nodeName: currentNode.value.properties?.name,
+    formData: cloneData(formData),
+    formRule: formRule.value,
+    formOption: formOption.value
+  };
+
+  visible.value = false;
+  emit("submitted", submitPayload);
+  ElMessage.success("表单数据已收集");
+};
+
 const submitForm = () => {
+  if (!formRule.value.length) {
+    emitSubmitted({});
+    return;
+  }
+
   if (!formApi.value) {
     ElMessage.warning("表单尚未初始化完成");
     return;
@@ -106,16 +125,7 @@ const submitForm = () => {
 
   formApi.value.submit(
     formData => {
-      emit("submitted", {
-        nodeId: currentNode.value.id,
-        nodeType: currentNode.value.type,
-        nodeName: currentNode.value.properties?.name,
-        formData: cloneData(formData),
-        formRule: formRule.value,
-        formOption: formOption.value
-      });
-      ElMessage.success("表单数据已收集");
-      visible.value = false;
+      emitSubmitted(formData);
     },
     () => {
       ElMessage.warning("请检查表单必填项或格式");

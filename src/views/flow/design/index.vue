@@ -25,12 +25,13 @@
         v-model="showFormRunner"
         :node="runnerNodeData"
         @submitted="handleFormSubmitted"
+        @closed="handleFormRunnerClosed"
       />
     </div>
   </div>
 </template>
 <script setup lang="ts">
-import { ref, onMounted, reactive } from "vue";
+import { ref, onMounted, reactive, nextTick } from "vue";
 import LogicFlow from "@logicflow/core";
 import { Menu, Snapshot, MiniMap } from "@logicflow/extension";
 import "@logicflow/core/lib/style/index.css";
@@ -94,7 +95,16 @@ let container = ref(null);
 let showLf = ref(false);
 let showFormRunner = ref(false);
 let runnerNodeData = ref(null);
+let pendingRunnerNodeData = ref(null);
 let collectedFormData = ref([]);
+let isFlowRunning = ref(false);
+let runningContext = reactive({
+  startedAt: "",
+  endedAt: "",
+  currentNodeId: "",
+  visitedNodeIds: [],
+  nodes: []
+});
 
 const $_initLf = () => {
   // 画布配置
@@ -248,46 +258,163 @@ const $_LfEvent = () => {
   });
 };
 
-const getRunnableNode = () => {
-  const selectedNodes = lf.getSelectElements?.()?.nodes || [];
-  const selectedNode = selectedNodes.find(node => node.type === "endParallel");
-  if (selectedNode) return selectedNode;
+const resetRunningContext = () => {
+  runningContext.startedAt = new Date().toISOString();
+  runningContext.endedAt = "";
+  runningContext.currentNodeId = "";
+  runningContext.visitedNodeIds = [];
+  runningContext.nodes = [];
+};
 
-  if (nodeData.value?.type === "endParallel") {
-    return nodeData.value;
+const getNodeLabel = node => {
+  return node?.properties?.name || node?.text?.value || node?.id || "未知节点";
+};
+
+const getEdgeTargetNode = (edge, graphData) => {
+  return graphData.nodes.find(node => node.id === edge.targetNodeId);
+};
+
+const findNextNode = (currentNode, graphData) => {
+  const outgoingEdges = graphData.edges.filter(
+    edge => edge.sourceNodeId === currentNode.id
+  );
+
+  if (outgoingEdges.length === 0) {
+    if (currentNode.type === "end") return null;
+    throw new Error(`节点「${getNodeLabel(currentNode)}」没有后续连线`);
+  }
+
+  const nextNodes = outgoingEdges
+    .map(edge => getEdgeTargetNode(edge, graphData))
+    .filter(Boolean);
+
+  if (nextNodes.length !== outgoingEdges.length) {
+    throw new Error("连线目标节点不存在，请检查流程图");
+  }
+
+  const unvisitedNodes = nextNodes.filter(
+    node => !runningContext.visitedNodeIds.includes(node.id)
+  );
+  const unvisitedNonEndNodes = unvisitedNodes.filter(
+    node => node.type !== "end"
+  );
+
+  if (unvisitedNonEndNodes.length === 1) {
+    return unvisitedNonEndNodes[0];
+  }
+
+  if (unvisitedNonEndNodes.length > 1) {
+    throw new Error(
+      `节点「${getNodeLabel(currentNode)}」存在多个未执行后续节点，PoC 阶段暂不支持分支流程`
+    );
+  }
+
+  const unvisitedEndNodes = unvisitedNodes.filter(node => node.type === "end");
+
+  if (unvisitedEndNodes.length === 1) {
+    return unvisitedEndNodes[0];
+  }
+
+  if (unvisitedEndNodes.length > 1) {
+    throw new Error(
+      `节点「${getNodeLabel(currentNode)}」连接了多个结束节点，请保留一个结束出口`
+    );
+  }
+
+  throw new Error("检测到流程环路或没有可继续执行的后续节点");
+};
+
+const validateFlowForRun = graphData => {
+  const startNodes = graphData.nodes.filter(node => node.type === "start");
+  const endNodes = graphData.nodes.filter(node => node.type === "end");
+
+  if (startNodes.length !== 1) {
+    throw new Error("流程必须包含且只能包含一个开始节点");
+  }
+
+  if (endNodes.length === 0) {
+    throw new Error("流程必须包含至少一个结束节点");
+  }
+
+  return startNodes[0];
+};
+
+const finishFlowRun = () => {
+  isFlowRunning.value = false;
+  runningContext.endedAt = new Date().toISOString();
+  showFormRunner.value = false;
+  runnerNodeData.value = null;
+
+  const result = {
+    startedAt: runningContext.startedAt,
+    endedAt: runningContext.endedAt,
+    nodes: [...runningContext.nodes]
+  };
+
+  console.log("[Flow Runner] flow finished:", result);
+  ElMessage.success("流程运行完成，已收集全部表单数据");
+};
+
+const runNode = currentNode => {
+  if (!currentNode) return;
+
+  if (runningContext.visitedNodeIds.includes(currentNode.id)) {
+    throw new Error("检测到流程环路，PoC 阶段暂不支持环路流程");
+  }
+
+  runningContext.currentNodeId = currentNode.id;
+  runningContext.visitedNodeIds.push(currentNode.id);
+
+  if (currentNode.type === "end") {
+    finishFlowRun();
+    return;
+  }
+
+  if (currentNode.type === "endParallel") {
+    runnerNodeData.value = currentNode;
+    showFormRunner.value = true;
+    return;
   }
 
   const graphData = lf.getGraphData();
-  const formNodes = graphData.nodes.filter(
-    node => node.type === "endParallel" && node.properties?.formRule?.length
-  );
-
-  if (formNodes.length === 1) {
-    return formNodes[0];
-  }
-
-  if (formNodes.length > 1) {
-    ElMessage.warning("存在多个表单节点，请先单击选择一个普通节点后再运行");
-    return null;
-  }
-
-  ElMessage.warning("请先配置一个带表单字段的普通节点");
-  return null;
+  runNode(findNextNode(currentNode, graphData));
 };
 
 const openFormRunner = () => {
-  const runnableNode = getRunnableNode();
-  if (!runnableNode) return;
+  try {
+    const graphData = lf.getGraphData();
+    const startNode = validateFlowForRun(graphData);
+    resetRunningContext();
+    isFlowRunning.value = true;
+    runNode(startNode);
+  } catch (error) {
+    isFlowRunning.value = false;
+    ElMessage.warning(error instanceof Error ? error.message : "流程运行失败");
+  }
+};
 
-  runnerNodeData.value = runnableNode;
+const openNextRunnerDialog = nextNode => {
+  pendingRunnerNodeData.value = nextNode;
+};
+
+const handleFormRunnerClosed = async () => {
+  if (!pendingRunnerNodeData.value) return;
+
+  runnerNodeData.value = pendingRunnerNodeData.value;
+  pendingRunnerNodeData.value = null;
+  await nextTick();
   showFormRunner.value = true;
 };
 
 const handleFormSubmitted = payload => {
-  collectedFormData.value.push({
+  const submittedAt = new Date().toISOString();
+  const submitRecord = {
     ...payload,
-    submittedAt: new Date().toISOString()
-  });
+    submittedAt
+  };
+
+  collectedFormData.value.push(submitRecord);
+  runningContext.nodes.push(submitRecord);
 
   lf.setProperties(payload.nodeId, {
     formSubmitData: payload.formData,
@@ -296,10 +423,31 @@ const handleFormSubmitted = payload => {
     )
   });
 
-  console.log("[Flow Form Runner] collected form data:", {
+  console.log("[Flow Runner] node form submitted:", {
     current: payload,
-    all: collectedFormData.value
+    context: runningContext
   });
+
+  if (!isFlowRunning.value) return;
+
+  try {
+    const graphData = lf.getGraphData();
+    const currentNode = graphData.nodes.find(
+      node => node.id === payload.nodeId
+    );
+    const nextNode = findNextNode(currentNode, graphData);
+
+    if (nextNode?.type === "endParallel") {
+      openNextRunnerDialog(nextNode);
+    } else {
+      runNode(nextNode);
+    }
+  } catch (error) {
+    isFlowRunning.value = false;
+    ElMessage.warning(
+      error instanceof Error ? error.message : "流程继续运行失败"
+    );
+  }
 };
 
 const hideAddPanel = () => {

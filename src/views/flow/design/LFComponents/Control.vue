@@ -34,7 +34,7 @@
       <el-tooltip content="下载图片" title="下载图片" placement="left">
         <el-icon @click="$_download"><Download /></el-icon>
       </el-tooltip>
-      <el-tooltip content="运行表单" title="运行表单" placement="left">
+      <el-tooltip content="运行流程" title="运行流程" placement="left">
         <el-icon @click="runFormFunc"><VideoPlay /></el-icon>
       </el-tooltip>
       <el-tooltip content="查看JSON" title="查看JSON" placement="left">
@@ -67,7 +67,7 @@ let graphData = ref(null);
 
 let showViewJson = ref(false);
 
-//运行表单
+//运行流程
 const runFormFunc = () => {
   emit("runForm");
 };
