@@ -63,6 +63,7 @@ pure-work-demo/
 - `src/views/flow/index.vue`：流程设计器页面外层入口。
 - `src/views/flow/design/index.vue`：LogicFlow 画布初始化、节点/边注册、事件绑定、属性面板挂载。
 - `src/views/flow/design/components/FormDesignerPanel.vue`：封装 `@form-create/designer` 的 `FcDesigner`，提供节点表单规则和表单配置的读取/回显能力。
+- `src/views/flow/design/components/FormRunnerDialog.vue`：运行节点表单，基于 `form-create` 渲染设计结果并收集用户填写数据。
 
 ## 开发/构建命令
 
@@ -87,11 +88,12 @@ pure-work-demo/
 - Flow 模块当前以 LogicFlow 为核心：自定义节点注册位于 `src/views/flow/design/registerNode`，自定义边位于 `src/views/flow/design/registerEdge`，左侧节点面板位于 `src/views/flow/design/LFComponents/NodePanel.vue`，属性抽屉位于 `src/views/flow/design/PropertySetting/PropertyDialog.vue`。
 - Flow 已在普通节点 `endParallel` 的属性面板中集成 form-create designer；设计器数据保存到节点 `properties.formRule` 与 `properties.formOption`，保证 `lf.getGraphData()` 可完整保存与回显。
 - PoC 阶段 form-create designer 仅允许使用文本框 `input` 与日期框 `datePicker`，其他组件菜单/字段已在 `FormDesignerPanel.vue` 中隐藏，并在保存/回显时过滤非 PoC 字段。
+- Flow 工具栏提供“运行表单”按钮，运行当前选中普通节点的 `formRule`/`formOption`，提交后将数据写入节点 `properties.formSubmitData` 和 `properties.formSubmitHistory`。
 - LogicFlow 节点属性更新主要通过 `lf.setProperties` 与 `lf.updateText` 完成；节点可视化组件通过 `createApp + h` 挂载到 LogicFlow HTML 节点中。
 - 避免在未确认生命周期清理的情况下重复挂载 LogicFlow HTML 节点中的 Vue 子应用；后续重构时应考虑卸载逻辑。
 
 ## 最后更新时间
 
-2026-05-07 10:23:31 +08:00
+2026-05-07 10:39:03 +08:00
 
-更新摘要：补充隐藏 form-create designer 中的穿梭框 `elTransfer` 与树形选择 `elTreeSelect`，避免 PoC 阶段字段面板出现非需求组件。
+更新摘要：修复 `src/router/index.ts` 中三元表达式仅用于副作用导致的 `no-unused-expressions` 警告，并通过 `pnpm lint:eslint` 与 `pnpm typecheck` 校验。

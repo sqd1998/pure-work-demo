@@ -2,11 +2,16 @@
   <div class="app-container">
     <div class="logic-flow-view">
       <!-- 工具栏 -->
-      <Control v-if="showLf" class="demo-control" :lf="lf" />
+      <Control
+        v-if="showLf"
+        class="demo-control"
+        :lf="lf"
+        @runForm="openFormRunner"
+      />
       <!-- 左侧面板 -->
       <NodePanel v-if="showLf" :lf="lf" :title="title" />
       <!-- 画布 -->
-      <div id="LF-view" ref="container" />
+      <div id="lf-view" ref="container" />
       <!-- 属性面板 -->
       <PropertyDialog
         v-if="showAttribute"
@@ -15,6 +20,11 @@
         :flowDetail="flowDetail"
         :lf="lf"
         @closed="showAttribute = false"
+      />
+      <FormRunnerDialog
+        v-model="showFormRunner"
+        :node="runnerNodeData"
+        @submitted="handleFormSubmitted"
       />
     </div>
   </div>
@@ -34,6 +44,7 @@ import background2 from "./registerNode/background2/background";
 import PropertyDialog from "./PropertySetting/PropertyDialog.vue";
 import NodePanel from "./LFComponents/NodePanel.vue";
 import Control from "./LFComponents/Control.vue";
+import FormRunnerDialog from "./components/FormRunnerDialog.vue";
 import { ElMessage } from "element-plus";
 
 const props = defineProps({
@@ -81,6 +92,9 @@ let config = reactive({
 let flowDetail = reactive({});
 let container = ref(null);
 let showLf = ref(false);
+let showFormRunner = ref(false);
+let runnerNodeData = ref(null);
+let collectedFormData = ref([]);
 
 const $_initLf = () => {
   // 画布配置
@@ -224,13 +238,67 @@ const $_LfEvent = () => {
 
   // 子节点选择事件处理
   lf.on("node:click", ({ data }) => {
-    // 可以在这里添加子节点选择后的处理逻辑
+    nodeData.value = data;
   });
 
   // 节点移动开始事件
   lf.on("node:move:start", ({ data }) => {
     // 记录节点初始位置，用于后续验证
     data.__originalPosition = { x: data.x, y: data.y };
+  });
+};
+
+const getRunnableNode = () => {
+  const selectedNodes = lf.getSelectElements?.()?.nodes || [];
+  const selectedNode = selectedNodes.find(node => node.type === "endParallel");
+  if (selectedNode) return selectedNode;
+
+  if (nodeData.value?.type === "endParallel") {
+    return nodeData.value;
+  }
+
+  const graphData = lf.getGraphData();
+  const formNodes = graphData.nodes.filter(
+    node => node.type === "endParallel" && node.properties?.formRule?.length
+  );
+
+  if (formNodes.length === 1) {
+    return formNodes[0];
+  }
+
+  if (formNodes.length > 1) {
+    ElMessage.warning("存在多个表单节点，请先单击选择一个普通节点后再运行");
+    return null;
+  }
+
+  ElMessage.warning("请先配置一个带表单字段的普通节点");
+  return null;
+};
+
+const openFormRunner = () => {
+  const runnableNode = getRunnableNode();
+  if (!runnableNode) return;
+
+  runnerNodeData.value = runnableNode;
+  showFormRunner.value = true;
+};
+
+const handleFormSubmitted = payload => {
+  collectedFormData.value.push({
+    ...payload,
+    submittedAt: new Date().toISOString()
+  });
+
+  lf.setProperties(payload.nodeId, {
+    formSubmitData: payload.formData,
+    formSubmitHistory: collectedFormData.value.filter(
+      item => item.nodeId === payload.nodeId
+    )
+  });
+
+  console.log("[Flow Form Runner] collected form data:", {
+    current: payload,
+    all: collectedFormData.value
   });
 };
 
@@ -262,39 +330,53 @@ onMounted(() => {
 });
 </script>
 <style lang="scss">
+
+
+@keyframes lf-animate-dash {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
 .logic-flow-view {
-  height: 100vh;
   position: relative;
+  height: 100vh;
 }
+
 .demo-title {
-  text-align: center;
   margin: 20px;
+  text-align: center;
 }
+
 .demo-control {
   position: absolute;
   top: 15px;
   right: 100px;
   z-index: 2;
 }
-#LF-view {
+
+#lf-view {
   width: 100%;
   height: 100%;
   outline: none;
 }
+
 .time-plus {
   cursor: pointer;
 }
+
 .add-panel {
   position: absolute;
   z-index: 11;
-  background-color: white;
   padding: 10px 5px;
+  background-color: white;
 }
+
 .el-drawer__body {
-  height: 80%;
-  overflow: auto;
-  margin-top: -30px;
   z-index: 3;
+  height: 80%;
+  margin-top: -30px;
+  overflow: auto;
 }
 
 .lf-node-text-auto-wrap {
@@ -305,54 +387,52 @@ onMounted(() => {
 .lf-node-text-ellipsis-content {
   padding: 0 8px 0 34px !important;
 }
+
 .node-title {
-  height: 40px;
+  box-sizing: border-box;
   width: 100%;
+  height: 40px;
+  padding: 10px 10px 10px 6px;
+  cursor: pointer;
   background: #fff;
   border: 1px solid #e6f7ff;
-  box-sizing: border-box;
-  padding: 10px 10px 10px 6px;
   border-radius: 8px;
-  cursor: pointer;
 }
+
 .node-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 26px;
   height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   font-size: 18px;
 }
+
 .node-name > span {
   border: none !important;
 }
 
 //logicflow小地图
 .lf-mini-map {
-  border-radius: 6px;
   border: none !important;
-  box-shadow: 3px 0 10px 1px rgb(228, 224, 219);
+  border-radius: 6px;
+  box-shadow: 3px 0 10px 1px rgb(228 224 219);
 }
 
 .lf-mini-map-header {
-  border: none !important;
-  font-size: 13px;
   height: 24px !important;
+  font-size: 13px;
   line-height: 24px !important;
   // color: #fff;
   background-color: #ecf5ff !important;
   background-image: none !important;
+  border: none !important;
 }
 
 .lf-mini-map-close {
   top: 2px !important;
 }
 
-@keyframes lf_animate_dash {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
 .mt15 {
   margin-top: 15px;
 }
