@@ -43,10 +43,10 @@
               v-if="data.type == 'ellipse'"
               class="endParallel"
               style="
-                transform: rotate(90deg);
                 width: 23px;
                 height: 23px;
                 margin: 0;
+                transform: rotate(90deg);
               "
             />
             <polygon2
@@ -69,10 +69,10 @@
               v-if="data.type == 'background2'"
               class="endParallel"
               style="
-                transform: rotate(90deg);
                 width: 25px;
                 height: 25px;
                 margin: 0;
+                transform: rotate(90deg);
               "
             />
 
@@ -250,7 +250,12 @@ onMounted(() => {
       props.lf.setProperties(randomNum.value, {
         name: dragRow.name,
         desc: "",
-        frontend_status: "1"
+        frontend_status: "1",
+        formRule: [],
+        formOption: {
+          submitBtn: false,
+          resetBtn: false
+        }
       });
     } else if (dragRow.type == "background" || dragRow.type == "background2") {
       props.lf.setProperties(randomNum.value, {
@@ -282,46 +287,53 @@ onMounted(() => {
   position: absolute;
   top: 50px;
   left: 25px;
+  z-index: 101;
   width: 180px;
   padding: 0 13px 20px;
   background-color: white;
-  box-shadow: 0 0 10px 1px rgb(228, 224, 219);
   border-radius: 6px;
-  z-index: 101;
+  box-shadow: 0 0 10px 1px rgb(228 224 219);
 }
+
 .node-item {
   margin-bottom: 20px;
 }
+
 .node-item-icon {
   width: 30px;
   height: 30px;
   margin-left: 20px;
   background-size: cover;
 }
+
 .node-label {
-  font-size: 12px;
   margin-top: 5px;
+  font-size: 12px;
   user-select: none;
 }
+
 .custom-tree-node {
   display: flex;
+
   .drag-label {
     user-select: none; //禁止选择文本
   }
 
   .endParallel {
+    position: relative;
+    bottom: 1px;
     width: 16px;
     height: 16px;
     margin: 1px 4px 0 0;
     font-size: 14px;
-    position: relative;
-    bottom: 1px;
   }
+
   .unified-size {
     width: 25px;
     height: 25px;
     margin: 0;
   }
+
   .rotate-90 {
     transform: rotate(90deg);
   }

@@ -4,7 +4,7 @@
       v-model="showNodeAttribute"
       :wrapperClosable="true"
       direction="rtl"
-      size="550px"
+      :size="drawerSize"
       append-to-body
       :close-on-click-modal="true"
       @closed="closed"
@@ -14,7 +14,7 @@
           {{ getLabelByValue(nodeData.type, pixelOption, "value", "label") }}
         </div>
       </template>
-      <div style="padding: 15px 20px">
+      <div class="property-dialog-body">
         <startProperty
           v-if="nodeData.type === 'start'"
           :title="title"
@@ -67,7 +67,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { computed, ref, onMounted } from "vue";
 import startProperty from "../registerNode/start/startProperty.vue";
 import endProperty from "../registerNode/end/endProperty.vue";
 import graphicProperty from "../registerNode/graphic/graphicProperty.vue";
@@ -138,6 +138,10 @@ const pixelOption = [
 ];
 const emit = defineEmits(["closed"]);
 
+const drawerSize = computed(() => {
+  return props.nodeData?.type === "endParallel" ? "88vw" : "550px";
+});
+
 let showNodeAttribute = ref(true);
 const getLabelByValue = (
   value: any,
@@ -161,4 +165,9 @@ const closed = () => {
 
 onMounted(() => {});
 </script>
-<style></style>
+<style scoped lang="scss">
+.property-dialog-body {
+  padding: 15px 20px;
+  overflow-x: auto;
+}
+</style>

@@ -1,21 +1,33 @@
 <template>
-  <div>
-    <el-form
-      ref="propertyFormRef"
-      :model="propertyForm"
-      :inline-message="true"
-      :rules="rules"
-      label-position="top"
-      :disabled="flowDetail.status == '2'"
-    >
-      <el-form-item label="名称" prop="name">
-        <el-input v-model="propertyForm.name" clearable />
-      </el-form-item>
-      <el-form-item label="描述" prop="desc">
-        <el-input v-model="propertyForm.desc" type="textarea" :rows="2" />
-      </el-form-item>
-    </el-form>
-    <div v-if="flowDetail.status != '2'" class="mt15">
+  <div class="end-parallel-property">
+    <el-tabs v-model="activeTab">
+      <el-tab-pane label="基础信息" name="basic">
+        <el-form
+          ref="propertyFormRef"
+          :model="propertyForm"
+          :inline-message="true"
+          :rules="rules"
+          label-position="top"
+          :disabled="flowDetail.status == '2'"
+        >
+          <el-form-item label="名称" prop="name">
+            <el-input v-model="propertyForm.name" clearable />
+          </el-form-item>
+          <el-form-item label="描述" prop="desc">
+            <el-input v-model="propertyForm.desc" type="textarea" :rows="2" />
+          </el-form-item>
+        </el-form>
+      </el-tab-pane>
+      <el-tab-pane label="表单设计" name="form">
+        <FormDesignerPanel
+          ref="formDesignerRef"
+          :rule="propertyForm.formRule"
+          :option="propertyForm.formOption"
+        />
+      </el-tab-pane>
+    </el-tabs>
+
+    <div v-if="flowDetail.status != '2'" class="mt15 action-bar">
       <el-button @click="cancelFunc"> 取消 </el-button>
       <el-button type="primary" @click="confirmFunc"> 确定 </el-button>
     </div>
@@ -23,6 +35,9 @@
 </template>
 <script setup lang="ts">
 import { ref, onMounted, reactive } from "vue";
+import type { FormInstance } from "element-plus";
+import type { Options, Rule } from "@form-create/element-ui";
+import FormDesignerPanel from "../../components/FormDesignerPanel.vue";
 
 const props = defineProps({
   nodeData: Object,
@@ -37,10 +52,23 @@ const props = defineProps({
 });
 const emit = defineEmits(["closed"]);
 
+const defaultFormOption = (): Options => ({
+  submitBtn: false,
+  resetBtn: false
+});
+
+const cloneData = <T,>(data: T): T => {
+  if (data === undefined || data === null) return data;
+  return JSON.parse(JSON.stringify(data));
+};
+
+let activeTab = ref("basic");
 let propertyForm = reactive({
   name: "",
   desc: "",
-  assignList: []
+  assignList: [],
+  formRule: [] as Rule[],
+  formOption: defaultFormOption()
 });
 let rules: any = reactive({
   name: [
@@ -57,20 +85,27 @@ let rules: any = reactive({
     }
   ]
 });
-let propertyFormRef = ref(null);
+let propertyFormRef = ref<FormInstance | null>(null);
+let formDesignerRef = ref<InstanceType<typeof FormDesignerPanel> | null>(null);
 
 //更新节点属性
 const setProperties = () => {
+  const formRule = formDesignerRef.value?.getRule?.() || propertyForm.formRule;
+  const formOption =
+    formDesignerRef.value?.getOption?.() || propertyForm.formOption;
+
   props.lf.setProperties(props.nodeData.id, {
     name: propertyForm.name,
     desc: propertyForm.desc,
-    frontend_status: "1" //0配置错误，1配置正常
+    frontend_status: "1", //0配置错误，1配置正常
+    formRule: cloneData(formRule),
+    formOption: cloneData(formOption)
   });
 };
 
 //确定
 const confirmFunc = () => {
-  propertyFormRef.value.validate(valid => {
+  propertyFormRef.value?.validate(valid => {
     if (valid) {
       setProperties();
       props.lf.updateText(props.nodeData.id, propertyForm.name);
@@ -89,6 +124,20 @@ onMounted(() => {
   propertyForm.desc = props.nodeData.properties.desc
     ? props.nodeData.properties.desc
     : "";
+  propertyForm.formRule = cloneData(props.nodeData.properties.formRule || []);
+  propertyForm.formOption = cloneData(
+    props.nodeData.properties.formOption || defaultFormOption()
+  );
 });
 </script>
-<style scoped></style>
+<style scoped lang="scss">
+.end-parallel-property {
+  min-width: 980px;
+}
+
+.action-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: 12px;
+}
+</style>

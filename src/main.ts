@@ -25,11 +25,15 @@ import TDesignChat from "@tdesign-vue-next/chat"; // 引入chat组件
 import "tdesign-vue-next/es/style/index.css"; // 引入少量全局样式变量
 import TDesign from "tdesign-vue-next";
 import elementIcons from "@/utils/elementIcons"; //@element-plus/icons-vue
+import formCreate from "@form-create/element-ui";
+import FcDesigner from "@form-create/designer";
 
 const app = createApp(App);
 app.use(elementIcons);
 app.use(TDesignChat);
 app.use(TDesign);
+app.use(formCreate);
+app.use(FcDesigner);
 // 自定义指令
 import * as directives from "@/directives";
 Object.keys(directives).forEach(key => {
