@@ -32,7 +32,7 @@ const props = defineProps({
 
 const designerRef = ref<InstanceType<typeof FcDesigner> | null>(null);
 
-const pocAllowedItems = ["input", "datePicker"];
+const pocAllowedItems = ["input", "datePicker", "timePicker", "timeRange"];
 const pocHiddenItems = [
   "textarea",
   "password",
@@ -43,8 +43,7 @@ const pocHiddenItems = [
   "select",
   "switch",
   "rate",
-  "timePicker",
-  "timeRange",
+
   "slider",
   "dateRange",
   "colorPicker",
