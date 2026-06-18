@@ -145,7 +145,11 @@ router.beforeEach((to: ToRouteType, _from, next) => {
   }
   /** 如果已经登录并存在登录信息后不能跳转到路由白名单，而是继续保持在当前页面 */
   function toCorrectRoute() {
-    whiteList.includes(to.fullPath) ? next(_from.fullPath) : next();
+    if (whiteList.includes(to.fullPath)) {
+      next(_from.fullPath);
+    } else {
+      next();
+    }
   }
   if (Cookies.get(multipleTabsKey) && userInfo) {
     // 无权限跳转403页面

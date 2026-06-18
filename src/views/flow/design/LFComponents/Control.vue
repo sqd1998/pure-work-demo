@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- 画布左上角几个按钮 -->
-    <div class="panelLayout" style="background: #fff; height: 200px">
+    <div class="panelLayout" style="height: 200px; background: #fff">
       <el-tooltip content="放大" title="放大" placement="left">
         <el-icon @click="$_zoomIn"><ZoomIn /></el-icon>
       </el-tooltip>
@@ -34,6 +34,9 @@
       <el-tooltip content="下载图片" title="下载图片" placement="left">
         <el-icon @click="$_download"><Download /></el-icon>
       </el-tooltip>
+      <el-tooltip content="运行流程" title="运行流程" placement="left">
+        <el-icon @click="runFormFunc"><VideoPlay /></el-icon>
+      </el-tooltip>
       <el-tooltip content="查看JSON" title="查看JSON" placement="left">
         <el-icon @click="viewJsonFunc"><View /></el-icon>
       </el-tooltip>
@@ -57,12 +60,17 @@ const props = defineProps({
   lf: Object,
   catTurboData: Boolean
 });
-const emit = defineEmits(["update"]);
+const emit = defineEmits(["update", "runForm"]);
 let undoDisable = ref(true);
 let redoDisable = ref(true);
 let graphData = ref(null);
 
 let showViewJson = ref(false);
+
+//运行流程
+const runFormFunc = () => {
+  emit("runForm");
+};
 
 //查看JSON
 const viewJsonFunc = () => {
@@ -135,20 +143,20 @@ onMounted(() => {
 <style lang="scss" scoped>
 // 自动布局按钮位置控制
 .panelLayout {
-  height: 130px;
-  width: 30px;
-  background: #f3f5f8;
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-around;
-  align-items: center;
   position: absolute;
-
   top: 40px;
   z-index: 999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-around;
+  width: 30px;
+  height: 130px;
   padding: 4px 0;
-  box-shadow: 3px 0 10px 1px rgb(228, 224, 219);
+  background: #f3f5f8;
+  border-radius: 12px;
+  box-shadow: 3px 0 10px 1px rgb(228 224 219);
+
   i {
     cursor: pointer;
   }

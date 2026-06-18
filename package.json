@@ -53,6 +53,8 @@
     "@antv/x6-plugin-snapline": "^2.1.7",
     "@antv/x6-plugin-stencil": "^2.1.5",
     "@element-plus/icons-vue": "^2.3.2",
+    "@form-create/designer": "^3.4.0",
+    "@form-create/element-ui": "^3.2.42",
     "@logicflow/core": "^2.1.10",
     "@logicflow/extension": "^2.1.12",
     "@microsoft/fetch-event-source": "^2.0.1",

@@ -2,11 +2,16 @@
   <div class="app-container">
     <div class="logic-flow-view">
       <!-- 工具栏 -->
-      <Control v-if="showLf" class="demo-control" :lf="lf" />
+      <Control
+        v-if="showLf"
+        class="demo-control"
+        :lf="lf"
+        @runForm="openFormRunner"
+      />
       <!-- 左侧面板 -->
       <NodePanel v-if="showLf" :lf="lf" :title="title" />
       <!-- 画布 -->
-      <div id="LF-view" ref="container" />
+      <div id="lf-view" ref="container" />
       <!-- 属性面板 -->
       <PropertyDialog
         v-if="showAttribute"
@@ -16,11 +21,17 @@
         :lf="lf"
         @closed="showAttribute = false"
       />
+      <FormRunnerDialog
+        v-model="showFormRunner"
+        :node="runnerNodeData"
+        @submitted="handleFormSubmitted"
+        @closed="handleFormRunnerClosed"
+      />
     </div>
   </div>
 </template>
 <script setup lang="ts">
-import { ref, onMounted, reactive } from "vue";
+import { ref, onMounted, reactive, nextTick } from "vue";
 import LogicFlow from "@logicflow/core";
 import { Menu, Snapshot, MiniMap } from "@logicflow/extension";
 import "@logicflow/core/lib/style/index.css";
@@ -34,6 +45,7 @@ import background2 from "./registerNode/background2/background";
 import PropertyDialog from "./PropertySetting/PropertyDialog.vue";
 import NodePanel from "./LFComponents/NodePanel.vue";
 import Control from "./LFComponents/Control.vue";
+import FormRunnerDialog from "./components/FormRunnerDialog.vue";
 import { ElMessage } from "element-plus";
 
 const props = defineProps({
@@ -81,6 +93,18 @@ let config = reactive({
 let flowDetail = reactive({});
 let container = ref(null);
 let showLf = ref(false);
+let showFormRunner = ref(false);
+let runnerNodeData = ref(null);
+let pendingRunnerNodeData = ref(null);
+let collectedFormData = ref([]);
+let isFlowRunning = ref(false);
+let runningContext = reactive({
+  startedAt: "",
+  endedAt: "",
+  currentNodeId: "",
+  visitedNodeIds: [],
+  nodes: []
+});
 
 const $_initLf = () => {
   // 画布配置
@@ -224,7 +248,7 @@ const $_LfEvent = () => {
 
   // 子节点选择事件处理
   lf.on("node:click", ({ data }) => {
-    // 可以在这里添加子节点选择后的处理逻辑
+    nodeData.value = data;
   });
 
   // 节点移动开始事件
@@ -232,6 +256,198 @@ const $_LfEvent = () => {
     // 记录节点初始位置，用于后续验证
     data.__originalPosition = { x: data.x, y: data.y };
   });
+};
+
+const resetRunningContext = () => {
+  runningContext.startedAt = new Date().toISOString();
+  runningContext.endedAt = "";
+  runningContext.currentNodeId = "";
+  runningContext.visitedNodeIds = [];
+  runningContext.nodes = [];
+};
+
+const getNodeLabel = node => {
+  return node?.properties?.name || node?.text?.value || node?.id || "未知节点";
+};
+
+const getEdgeTargetNode = (edge, graphData) => {
+  return graphData.nodes.find(node => node.id === edge.targetNodeId);
+};
+
+const findNextNode = (currentNode, graphData) => {
+  const outgoingEdges = graphData.edges.filter(
+    edge => edge.sourceNodeId === currentNode.id
+  );
+
+  if (outgoingEdges.length === 0) {
+    if (currentNode.type === "end") return null;
+    throw new Error(`节点「${getNodeLabel(currentNode)}」没有后续连线`);
+  }
+
+  const nextNodes = outgoingEdges
+    .map(edge => getEdgeTargetNode(edge, graphData))
+    .filter(Boolean);
+
+  if (nextNodes.length !== outgoingEdges.length) {
+    throw new Error("连线目标节点不存在，请检查流程图");
+  }
+
+  const unvisitedNodes = nextNodes.filter(
+    node => !runningContext.visitedNodeIds.includes(node.id)
+  );
+  const unvisitedNonEndNodes = unvisitedNodes.filter(
+    node => node.type !== "end"
+  );
+
+  if (unvisitedNonEndNodes.length === 1) {
+    return unvisitedNonEndNodes[0];
+  }
+
+  if (unvisitedNonEndNodes.length > 1) {
+    throw new Error(
+      `节点「${getNodeLabel(currentNode)}」存在多个未执行后续节点，PoC 阶段暂不支持分支流程`
+    );
+  }
+
+  const unvisitedEndNodes = unvisitedNodes.filter(node => node.type === "end");
+
+  if (unvisitedEndNodes.length === 1) {
+    return unvisitedEndNodes[0];
+  }
+
+  if (unvisitedEndNodes.length > 1) {
+    throw new Error(
+      `节点「${getNodeLabel(currentNode)}」连接了多个结束节点，请保留一个结束出口`
+    );
+  }
+
+  throw new Error("检测到流程环路或没有可继续执行的后续节点");
+};
+
+const validateFlowForRun = graphData => {
+  const startNodes = graphData.nodes.filter(node => node.type === "start");
+  const endNodes = graphData.nodes.filter(node => node.type === "end");
+
+  if (startNodes.length !== 1) {
+    throw new Error("流程必须包含且只能包含一个开始节点");
+  }
+
+  if (endNodes.length === 0) {
+    throw new Error("流程必须包含至少一个结束节点");
+  }
+
+  return startNodes[0];
+};
+
+const finishFlowRun = () => {
+  isFlowRunning.value = false;
+  runningContext.endedAt = new Date().toISOString();
+  showFormRunner.value = false;
+  runnerNodeData.value = null;
+
+  const result = {
+    startedAt: runningContext.startedAt,
+    endedAt: runningContext.endedAt,
+    nodes: [...runningContext.nodes]
+  };
+
+  console.log("[Flow Runner] flow finished:", result);
+  ElMessage.success("流程运行完成，已收集全部表单数据");
+};
+
+const runNode = currentNode => {
+  if (!currentNode) return;
+
+  if (runningContext.visitedNodeIds.includes(currentNode.id)) {
+    throw new Error("检测到流程环路，PoC 阶段暂不支持环路流程");
+  }
+
+  runningContext.currentNodeId = currentNode.id;
+  runningContext.visitedNodeIds.push(currentNode.id);
+
+  if (currentNode.type === "end") {
+    finishFlowRun();
+    return;
+  }
+
+  if (currentNode.type === "endParallel") {
+    runnerNodeData.value = currentNode;
+    showFormRunner.value = true;
+    return;
+  }
+
+  const graphData = lf.getGraphData();
+  runNode(findNextNode(currentNode, graphData));
+};
+
+const openFormRunner = () => {
+  try {
+    const graphData = lf.getGraphData();
+    const startNode = validateFlowForRun(graphData);
+    resetRunningContext();
+    isFlowRunning.value = true;
+    runNode(startNode);
+  } catch (error) {
+    isFlowRunning.value = false;
+    ElMessage.warning(error instanceof Error ? error.message : "流程运行失败");
+  }
+};
+
+const openNextRunnerDialog = nextNode => {
+  pendingRunnerNodeData.value = nextNode;
+};
+
+const handleFormRunnerClosed = async () => {
+  if (!pendingRunnerNodeData.value) return;
+
+  runnerNodeData.value = pendingRunnerNodeData.value;
+  pendingRunnerNodeData.value = null;
+  await nextTick();
+  showFormRunner.value = true;
+};
+
+const handleFormSubmitted = payload => {
+  const submittedAt = new Date().toISOString();
+  const submitRecord = {
+    ...payload,
+    submittedAt
+  };
+
+  collectedFormData.value.push(submitRecord);
+  runningContext.nodes.push(submitRecord);
+
+  lf.setProperties(payload.nodeId, {
+    formSubmitData: payload.formData,
+    formSubmitHistory: collectedFormData.value.filter(
+      item => item.nodeId === payload.nodeId
+    )
+  });
+
+  console.log("[Flow Runner] node form submitted:", {
+    current: payload,
+    context: runningContext
+  });
+
+  if (!isFlowRunning.value) return;
+
+  try {
+    const graphData = lf.getGraphData();
+    const currentNode = graphData.nodes.find(
+      node => node.id === payload.nodeId
+    );
+    const nextNode = findNextNode(currentNode, graphData);
+
+    if (nextNode?.type === "endParallel") {
+      openNextRunnerDialog(nextNode);
+    } else {
+      runNode(nextNode);
+    }
+  } catch (error) {
+    isFlowRunning.value = false;
+    ElMessage.warning(
+      error instanceof Error ? error.message : "流程继续运行失败"
+    );
+  }
 };
 
 const hideAddPanel = () => {
@@ -262,39 +478,51 @@ onMounted(() => {
 });
 </script>
 <style lang="scss">
+@keyframes lf-animate-dash {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
 .logic-flow-view {
-  height: 100vh;
   position: relative;
+  height: 100vh;
 }
+
 .demo-title {
-  text-align: center;
   margin: 20px;
+  text-align: center;
 }
+
 .demo-control {
   position: absolute;
   top: 15px;
   right: 100px;
   z-index: 2;
 }
-#LF-view {
+
+#lf-view {
   width: 100%;
   height: 100%;
   outline: none;
 }
+
 .time-plus {
   cursor: pointer;
 }
+
 .add-panel {
   position: absolute;
   z-index: 11;
-  background-color: white;
   padding: 10px 5px;
+  background-color: white;
 }
+
 .el-drawer__body {
-  height: 80%;
-  overflow: auto;
-  margin-top: -30px;
   z-index: 3;
+  height: 80%;
+  margin-top: -30px;
+  overflow: auto;
 }
 
 .lf-node-text-auto-wrap {
@@ -305,54 +533,52 @@ onMounted(() => {
 .lf-node-text-ellipsis-content {
   padding: 0 8px 0 34px !important;
 }
+
 .node-title {
-  height: 40px;
+  box-sizing: border-box;
   width: 100%;
+  height: 40px;
+  padding: 10px 10px 10px 6px;
+  cursor: pointer;
   background: #fff;
   border: 1px solid #e6f7ff;
-  box-sizing: border-box;
-  padding: 10px 10px 10px 6px;
   border-radius: 8px;
-  cursor: pointer;
 }
+
 .node-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 26px;
   height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   font-size: 18px;
 }
+
 .node-name > span {
   border: none !important;
 }
 
 //logicflow小地图
 .lf-mini-map {
-  border-radius: 6px;
   border: none !important;
-  box-shadow: 3px 0 10px 1px rgb(228, 224, 219);
+  border-radius: 6px;
+  box-shadow: 3px 0 10px 1px rgb(228 224 219);
 }
 
 .lf-mini-map-header {
-  border: none !important;
-  font-size: 13px;
   height: 24px !important;
+  font-size: 13px;
   line-height: 24px !important;
   // color: #fff;
   background-color: #ecf5ff !important;
   background-image: none !important;
+  border: none !important;
 }
 
 .lf-mini-map-close {
   top: 2px !important;
 }
 
-@keyframes lf_animate_dash {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
 .mt15 {
   margin-top: 15px;
 }
