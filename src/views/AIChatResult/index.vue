@@ -190,13 +190,8 @@ const placeholderPromptsItems: PromptsProps["items"] = [
 const senderPromptsItems: PromptsProps["items"] = [
   {
     key: "1",
-    description: "热门话题",
+    description: "知识源",
     icon: h(FireOutlined, { style: { color: "#FF4D4F" } })
-  },
-  {
-    key: "2",
-    description: "设计指南",
-    icon: h(ReadOutlined, { style: { color: "#1890FF" } })
   }
 ];
 
@@ -284,9 +279,10 @@ function onSubmit(nextContent: string) {
   onRequest(nextContent);
   content.value = "";
 }
-
+const drawerOpen = ref(false);
 const onPromptsItemClick: PromptsProps["onItemClick"] = info => {
-  onRequest(info.data.description as string);
+  // onRequest(info.data.description as string);
+  drawerOpen.value = true;
 };
 
 function onAddConversation() {
@@ -473,14 +469,23 @@ const items = computed<BubbleListProps["items"]>(() => {
         </template>
       </Sender>
     </div>
+    <el-drawer
+      v-model="drawerOpen"
+      title="知识源选择"
+      direction="btt"
+      resizable
+    >
+      <span>Hi, there!</span>
+    </el-drawer>
   </div>
 </template>
 <style scoped lang="scss">
 .main-content {
   width: 97% !important;
-  overflow: hidden;
   height: 85vh !important;
+  overflow: hidden;
 }
+
 .app-main {
   padding-top: 0 !important;
 }
